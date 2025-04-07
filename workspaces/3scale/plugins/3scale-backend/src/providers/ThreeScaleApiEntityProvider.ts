@@ -158,6 +158,30 @@ export class ThreeScaleApiEntityProvider implements EntityProvider {
               );
             }
           }
+          try {
+          await this.connection.applyMutation({
+            type: 'full',
+            entities: entities.map(entity => ({
+              entity,
+              locationKey: this.getProviderName(),
+            })),
+          });
+          } catch (error: any) {
+            if (isError(error)) {
+              // Ensure that we don't log any sensitive internal data:
+              this.logger.error(
+                `Error while applying mutation for 3scale entities`,
+                {
+                  // Default Error properties:
+                  name: error.name,
+                  message: error.message,
+                  stack: error.stack,
+                  // Additional status code if available:
+                  status: (error.response as { status?: string })?.status,
+                },
+              );
+            }
+          }
         },
       });
     };
@@ -227,14 +251,6 @@ export class ThreeScaleApiEntityProvider implements EntityProvider {
     }
 
     this.logger.info(`Applying the mutation with ${entities.length} entities`);
-
-    await this.connection.applyMutation({
-      type: 'full',
-      entities: entities.map(entity => ({
-        entity,
-        locationKey: this.getProviderName(),
-      })),
-    });
   }
 
   private async buildApiEntityFromService(
